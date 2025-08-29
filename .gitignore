@@ -114,3 +114,6 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# social images
+crypto-news-sentiment-app.png
