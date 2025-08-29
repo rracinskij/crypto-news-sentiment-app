@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Crypto News Sentiment (demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:#0f172a;color:#e5e7eb;margin:0}
+    header{padding:16px 20px;border-bottom:1px solid #1f2937;background:linear-gradient(135deg,#1e293b, #0f172a)}
+    h1{margin:0;font-size:22px}
+    .container{max-width:1000px;margin:0 auto;padding:20px}
+    .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:16px}
+    .btn{background:#1f2937;color:#e5e7eb;border:1px solid #374151;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+    .btn:hover{border-color:#4b5563}
+    .btn:disabled{opacity:0.6;cursor:not-allowed}
+    textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #374151;background:#0b1220;color:#e5e7eb}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+    .muted{color:#94a3b8;font-size:12px}
+    .section-title{margin:0 0 8px 0;font-size:16px}
+    .flex{display:flex;gap:8px;align-items:center}
+    .right{float:right}
+    .inline{display:inline-block}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border-bottom:1px solid #1f2937;padding:8px;vertical-align:top}
+    th{color:#9ca3af;text-align:left}
+    a{color:#93c5fd}
+    .scrollable{max-height:400px;overflow-y:auto;border:1px solid #1f2937;border-radius:8px;padding:8px}
+    .loading{opacity:0.6}
+    .content-cell{max-width:300px; max-height:200px; overflow:auto; white-space:pre-wrap; word-wrap:break-word; border:1px solid #374151; border-radius:4px; padding:8px; background:#0b1220}
+  </style>
+  <script>
+    async function refreshAll(){
+      const a = await fetch('/articles').then(r=>r.text());
+      document.getElementById('articles').innerHTML = a;
+      const p = await fetch('/predictions').then(r=>r.text());
+      document.getElementById('predictions').innerHTML = p;
+      const l = await fetch('/llm').then(r=>r.text());
+      document.getElementById('llm').innerHTML = l;
+    }
+    
+    function setButtonLoading(button, loading) {
+      if (loading) {
+        button.disabled = true;
+        button.textContent = button.textContent.replace('📡', '⏳').replace('🤖', '⏳') + ' Running...';
+        button.classList.add('loading');
+      } else {
+        button.disabled = false;
+        button.textContent = button.textContent.replace('⏳ Running...', '').replace('⏳', '📡').replace('⏳', '🤖');
+        button.classList.remove('loading');
+      }
+    }
+    
+    function handleFormSubmit(form, button) {
+      console.log('Form submission started:', form.action);
+      setButtonLoading(button, true);
+      
+      // Submit the form data using fetch
+      const formData = new FormData(form);
+      const action = form.action;
+      
+      // Log form data for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log('Form data:', key, '=', value);
+      }
+      
+      fetch(action, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        console.log('Response received:', response.status, response.redirected);
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          // Refresh the data after successful submission
+          refreshAll();
+          setButtonLoading(button, false);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setButtonLoading(button, false);
+      });
+      
+      // Re-enable button after 10 seconds as fallback
+      setTimeout(() => setButtonLoading(button, false), 10000);
+      
+      // Prevent default form submission since we're handling it with fetch
+      return false;
+    }
+    
+    // Check for error parameters in URL on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      refreshAll();
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      if (error === 'no_api_key') {
+        const errorDiv = document.getElementById('error-message');
+        if (errorDiv) {
+          errorDiv.textContent = '❌ OPENROUTER_API_KEY not set. Please create a .env file with your API key.';
+          errorDiv.style.display = 'block';
+        }
+      } else if (error === 'predictor_failed') {
+        const errorDiv = document.getElementById('error-message');
+        if (errorDiv) {
+          errorDiv.textContent = '❌ Predictor failed. Check the logs for details.';
+          errorDiv.style.display = 'block';
+        }
+      }
+    });
+  </script>
+</head>
+<body>
+<header class="container">
+  <h1>📰 Crypto News Sentiment (demo)</h1>
+  <div class="muted">Simple localhost FastAPI app: collect RSS ➜ call LLM ➜ view outputs</div>
+</header>
+
+<div id="error-message" style="display:none; background:#dc2626; color:white; padding:12px; margin:0 auto; max-width:1000px; border-radius:8px; text-align:center; font-weight:500;"></div>
+
+<div class="container">
+  <div class="grid">
+    <div class="card">
+      <h2 class="section-title">Actions</h2>
+      <form method="post" action="/collect" class="inline" onsubmit="return handleFormSubmit(this, this.querySelector('button'))">
+        <button class="btn">📡 Collect RSS</button>
+      </form>
+      <div class="muted" style="margin-top:8px">Collects last 24h if no prior data; otherwise only new entries per feed.</div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">LLM Prompt (optional override)</h2>
+      <form method="post" action="/predict" onsubmit="return handleFormSubmit(this, this.querySelector('button'))">
+        <label class="muted">System prompt override (leave empty to use sensible default)</label>
+        <textarea name="system_prompt" rows="6" placeholder="Enter an alternate system prompt to control the LLM style..."></textarea>
+        <label class="muted" style="margin-top:8px">Model (OpenRouter)</label>
+        <select name="model">
+          <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (default)</option>
+          <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet</option>
+          <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+          <option value="meta-llama/llama-3.1-8b-instruct">meta-llama/llama-3.1-8b-instruct</option>
+        </select>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn">🤖 Run with this prompt</button>
+          <span class="muted">24h horizon • JSON schema enforced</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Latest Predictions</h2>
+    <div class="scrollable">
+      <div id="predictions">Loading...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Latest Articles</h2>
+    <div class="scrollable">
+      <div id="articles">Loading...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">LLM Queries</h2>
+    <div class="scrollable">
+      <div id="llm">Loading...</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

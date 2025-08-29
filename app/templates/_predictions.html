@@ -1,0 +1,25 @@
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Model</th>
+      <th>Asset</th>
+      <th>Stance</th>
+      <th>Text</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ts, model, horizon, asset, stance, text in rows %}
+    <tr>
+      <td class="mono">{{ts}}</td>
+      <td class="mono">{{model}}</td>
+      <td class="mono">{{asset}}</td>
+      <td class="mono">{{stance}}</td>
+      <td>{{text}}</td>
+    </tr>
+    {% endfor %}
+    {% if rows|length == 0 %}
+    <tr><td colspan="5" class="muted">No predictions saved yet</td></tr>
+    {% endif %}
+  </tbody>
+</table>

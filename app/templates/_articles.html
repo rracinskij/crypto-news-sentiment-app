@@ -1,0 +1,23 @@
+<table>
+  <thead>
+    <tr>
+      <th>Published</th>
+      <th>Title</th>
+      <th>Source</th>
+      <th>Snippet</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for title, link, source, published, snippet in rows %}
+    <tr>
+      <td class="mono">{{published}}</td>
+      <td><a href="{{link}}" target="_blank" rel="noopener">{{title}}</a></td>
+      <td class="mono">{{source}}</td>
+      <td>{{snippet}}</td>
+    </tr>
+    {% endfor %}
+    {% if rows|length == 0 %}
+    <tr><td colspan="4" class="muted">No articles in this window</td></tr>
+    {% endif %}
+  </tbody>
+</table>

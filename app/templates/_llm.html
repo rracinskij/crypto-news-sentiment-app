@@ -1,0 +1,27 @@
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Model</th>
+      <th>Prompt</th>
+      <th>Response</th>
+      <th>Tokens</th>
+      <th>Duration (ms)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ts, model, prompt, response, tokens, dur in rows %}
+    <tr>
+      <td class="mono">{{ts}}</td>
+      <td class="mono">{{model}}</td>
+      <td><div class="content-cell">{{prompt}}</div></td>
+      <td><div class="content-cell">{{response}}</div></td>
+      <td class="mono">{{tokens}}</td>
+      <td class="mono">{{dur}}</td>
+    </tr>
+    {% endfor %}
+    {% if rows|length == 0 %}
+    <tr><td colspan="6" class="muted">No LLM calls recorded yet</td></tr>
+    {% endif %}
+  </tbody>
+</table>
